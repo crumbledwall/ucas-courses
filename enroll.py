@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import time
+import base64
 import random
 import pickle
 import logging
@@ -12,6 +13,13 @@ import requests
 
 from config import Config
 from mailer import sendemail
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5
+
+
+rawKey = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxG1zt7VW/VNk1KJC7AuoInrMZKTf0h6S6xBaROgCz8F3xdEIwdTBGrjUKIhIFCeDr6esfiVxUpdCdiRtqaCS9IdXO+9Fs2l6fx6oGkAA9pnxIWL7bw5vAxyK+liu7BToMFhUdiyRdB6erC1g/fwDVBywCWhY4wCU2/TSsTBDQhuGZzy+hmZGEB0sqgZbbJpeosW87dNZFomn/uGhfCDJzswjS/x0OXD9yyk5TEq3QEvx5pWCcBJqAoBfDDQy5eT3RR5YBGDJODHqW1c2OwwdrybEEXKI9RCZmsNyIs2eZn1z1Cw1AdR+owdXqbJf9AnM3e1CN8GcpWLDyOnaRymLgQIDAQAB
+-----END PUBLIC KEY-----"""
 
 CollegeCode = {
     '0701': '数学',
@@ -54,7 +62,7 @@ class Login:
     page = 'http://sep.ucas.ac.cn'
     url = page + '/slogin'
     system = page + '/portal/site/226/821'
-    pic = page + '/randomcode.jpg'
+    pic = page + '/changePic'
 
 
 class Course:
@@ -125,6 +133,12 @@ class Cli(object):
                 self.logger.debug('cookie expired...')
                 os.unlink('cookie.pkl')
         self.get(Login.page)
+        pubKey = RSA.importKey(rawKey)
+        encryptor = PKCS1_v1_5.new(pubKey)
+        encrypted = encryptor.encrypt(password.encode('utf8'))
+        b64 = base64.b64encode(encrypted)
+        password = b64.decode('utf-8')
+        
         data = {
             'userName': user,
             'pwd': password,
